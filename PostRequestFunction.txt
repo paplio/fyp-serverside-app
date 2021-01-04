@@ -1,0 +1,122 @@
+    void postRequest(String postUrl, RequestBody postBody) {
+
+        OkHttpClient.Builder builder = new OkHttpClient.Builder();
+        builder.connectTimeout(10, TimeUnit.MINUTES);
+        builder.readTimeout(10, TimeUnit.MINUTES);
+        builder.writeTimeout(10, TimeUnit.MINUTES);
+
+        OkHttpClient client = builder.build();
+
+        Request request = new Request.Builder()
+                .url(postUrl)
+                .post(postBody)
+                .build();
+
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                // Cancel the post on failure.
+                call.cancel();
+
+                // In order to access thTextView inside the UI thread, the code is executed inside runOnUiThread()
+                runOnUiThread(() -> {
+                    TextView responseText = findViewById(R.id.responseText);
+                    responseText.setText("Failed to Connect to Server");
+                });
+            }
+
+            @Override
+            public void onResponse (Call call, Response response) throws IOException {
+                // In order to access thTextView inside the UI thread, the code is executed inside runOnUiThread()
+
+                        System.out.println("Running!");
+                        if (choice.equals("extract")) {
+
+                            TextView responseText = findViewById(R.id.responseText);
+                            try {
+                                String app_dir = "accessibility";
+                                File file = new File(Environment.getExternalStorageDirectory() + "/" + app_dir, "final_output.mp3");
+                                if (!file.exists()) {
+                                    file.mkdirs();
+                                    System.out.println("we made accessibility!" + file.getAbsolutePath());
+                                }
+
+                                BufferedSink data = Okio.buffer(Okio.sink(file));
+                                data.writeAll(response.body().source());
+                                data.close();
+
+                                System.out.println("Wrote file!");
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                            responseText.setText("Extracted audio!");
+
+                        }
+
+                        else if (choice.equals("compress")) {
+                            System.out.println("\nCOMPRESSING\n");
+                            TextView responseText = findViewById(R.id.responseText);
+                            try {
+                                String app_dir = "accessibility";
+                                File file = new File(Environment.getExternalStorageDirectory() + "/" + app_dir, "compressed_video.mp4");
+                                if (!file.getParentFile().exists()) {
+                                    file.getParentFile().mkdirs();
+                                    System.out.println("we made accessibility!" + file.getAbsolutePath());
+                                }
+
+                                //passing through ffmpeg android lib one time to ensure encoding is correct
+                                /*
+                                FFmpeg ffmpeg = FFmpeg.getInstance(getApplicationContext());
+                                try{
+                                    String[] cmd = {"-i",file.getPath(),file.getPath()};
+                                    ffmpeg.execute(cmd, new ExecuteBinaryResponseHandler() {
+                                        @Override
+                                        public void onStart() {
+                                            System.out.println("\n---------COMMAND\nSTART\n");
+                                        }
+                                        @Override
+                                        public void onProgress(String message) {
+                                            System.out.println("Android pass: Progress"+message);
+                                        }
+                                        @Override
+                                        public void onFailure(String message) {
+                                            System.out.println("\n---------COMMAND\nFAILURE\n" + message);
+                                        }
+                                        @Override
+                                        public void onSuccess(String message) {
+                                            System.out.println("\n---------COMMAND\nSUCCESS\n");
+                                        }
+                                        @Override
+                                        public void onFinish() {
+                                            System.out.println("\n---------COMMAND\nFINISH\n");
+                                            //video.setVideoPath(output);
+                                            //video.start();
+                                        }
+                                    });
+                                } catch (FFmpegCommandAlreadyRunningException e) {
+                                    // Handle if FFmpeg is already running
+                                    e.printStackTrace();
+                                }
+                                 */
+                                System.out.println("Writing file");
+
+                                BufferedSink data = Okio.buffer(Okio.sink(file));
+                                data.writeAll(response.body().source());
+                                data.close();
+
+                                System.out.println("Done writing video file.");
+                                endtime = System.currentTimeMillis();
+                                responseText.setText("Compressed video!");
+                                System.out.println("Compression took " + (endtime-starttime)/1000 + " seconds and " +(endtime-starttime)%1000 + " milliseconds");
+
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+
+
+                        }
+                    }
+
+        });
+    }
